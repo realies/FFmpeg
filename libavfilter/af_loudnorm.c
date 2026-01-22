@@ -472,12 +472,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         ff_ebur128_loudness_shortterm(s->r128_in, &shortterm);
 
+        /* EBU R128 compliance: The relative gate should PROTECT quiet content
+         * from amplification, not apply the global gain to it. Content below
+         * the threshold gets unity gain (env_shortterm = 0 -> delta = 1.0). */
         if (shortterm < s->measured_thresh) {
             s->above_threshold = 0;
-            env_shortterm = shortterm <= -70. ? 0. : s->target_i - s->measured_i;
+            env_shortterm = 0.;  /* Unity gain for below-threshold content */
         } else {
             s->above_threshold = 1;
-            env_shortterm = shortterm <= -70. ? 0. : s->target_i - shortterm;
+            env_shortterm = s->target_i - shortterm;
         }
 
         for (n = 0; n < 30; n++)
@@ -542,20 +545,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         ff_ebur128_loudness_shortterm(s->r128_in, &shortterm);
         ff_ebur128_relative_threshold(s->r128_in, &relative_threshold);
 
+        /* Transition from below-threshold to above-threshold: switch immediately.
+         * The Gaussian filter will handle smoothing naturally. */
         if (s->above_threshold == 0) {
-            double shortterm_out;
-
-            if (shortterm > s->measured_thresh)
-                s->prev_delta *= 1.0058;
-
-            ff_ebur128_loudness_shortterm(s->r128_out, &shortterm_out);
-            if (shortterm_out >= s->target_i)
+            if (shortterm > s->measured_thresh) {
                 s->above_threshold = 1;
+            }
         }
 
-        if (shortterm < relative_threshold || shortterm <= -70. || s->above_threshold == 0) {
-            s->delta[s->index] = s->prev_delta;
+        /* EBU R128 compliance: Content below relative threshold or absolute
+         * gate (-70 LUFS) gets unity gain to prevent noise floor amplification. */
+        if (shortterm <= -70.) {
+            s->delta[s->index] = 1.;
+        } else if (shortterm < relative_threshold || s->above_threshold == 0) {
+            /* Below relative threshold: unity gain (protect quiet content) */
+            s->delta[s->index] = 1.;
         } else {
+            /* Above threshold: calculate gain to reach target */
             env_global = fabs(shortterm - global) < (s->target_lra / 2.) ? shortterm - global : (s->target_lra / 2.) * ((shortterm - global) < 0 ? -1 : 1);
             env_shortterm = s->target_i - shortterm;
             s->delta[s->index] = pow(10., (env_global + env_shortterm) / 20.);
