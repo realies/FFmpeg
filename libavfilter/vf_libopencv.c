@@ -139,10 +139,11 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
     /* the file alone defines the size of the shape */
     *cols = *rows = 0;
 
-    /* prescan file to get the number of lines and the maximum width */
+    /* prescan file to get the number of lines and the maximum width,
+     * the last line need not be newline terminated */
     w = 0;
-    for (i = 0; i < size; i++) {
-        if (buf[i] == '\n') {
+    for (i = 0; i < size || w; i++) {
+        if (i == size || buf[i] == '\n') {
             if (*rows == INT_MAX) {
                 av_log(log_ctx, AV_LOG_ERROR, "Overflow on the number of rows in the file\n");
                 ret = AVERROR_INVALIDDATA;
