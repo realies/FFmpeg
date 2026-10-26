@@ -47,7 +47,7 @@ data_hash=CRC32:dab3c9f5
 [SIDE_DATA]
 side_data_type=Skip Samples
 skip_samples=0
-discard_padding=405
+discard_padding=277
 skip_reason=0
 discard_reason=0
 [/SIDE_DATA]
@@ -104,7 +104,7 @@ data_hash=CRC32:dab3c9f5
 [SIDE_DATA]
 side_data_type=Skip Samples
 skip_samples=0
-discard_padding=405
+discard_padding=277
 skip_reason=0
 discard_reason=0
 [/SIDE_DATA]
