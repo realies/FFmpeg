@@ -31,6 +31,12 @@ fate-ogg-vorbis-libvorbis-1s: CMD = run_with_temp "$(FFMPEG) -nostdin -hide_bann
 FATE_OGG_VORBIS_ENCODE_PROBE-$(call ENCDEC, LIBVORBIS VORBIS, OGG, LAVFI_INDEV SINE_FILTER) += fate-ogg-vorbis-libvorbis-30s
 fate-ogg-vorbis-libvorbis-30s: CMD = run_with_temp "$(FFMPEG) -nostdin -hide_banner -loglevel quiet -f lavfi -i sine=frequency=440:duration=30:sample_rate=44100 -c:a libvorbis -bitexact -f ogg -y" "ffprobe$(PROGSSUF)$(EXESUF) -print_filename $$test -of default -bitexact -threads 1 -read_intervals %+\#5 -show_entries stream=codec_name,initial_padding:packet=pts,pts_time,dts,dts_time,duration,duration_time,flags:packet_side_data_list:format=filename,nb_streams,nb_programs,nb_stream_groups,format_name,start_time,duration,probe_score" ogg
 
+FATE_OGG_VORBIS_ENCODE_PROBE-$(call ENCDEC, VORBIS, OGG, LAVFI_INDEV ANULLSRC_FILTER ARESAMPLE_FILTER PCM_U8_DECODER) += fate-ogg-vorbis-short
+fate-ogg-vorbis-short: CMD = run_with_temp \
+    "$(FFMPEG) -nostdin -hide_banner -loglevel error -f lavfi -i anullsrc=r=48000:cl=stereo \
+    -t 0.01 -c:a vorbis -strict experimental -bitexact -f ogg -y" \
+    "ffprobe$(PROGSSUF)$(EXESUF) -v error -bitexact -show_entries frame=nb_samples -of default=nw=1" ogg
+
 FATE_OGG_VORBIS-$(call DEMDEC, OGG, VORBIS) += $(FATE_OGG_VORBIS)
 
 FATE_SAMPLES_DUMP_STREAM_META += $(FATE_OGG_VORBIS-yes)
