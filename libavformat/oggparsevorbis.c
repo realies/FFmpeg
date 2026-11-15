@@ -545,9 +545,10 @@ static int vorbis_packet(AVFormatContext *s, int idx)
          * duration from a previously processed EOS page, as can happen on
          * short or chained ogg streams and when probing rescans the page.
          * os->segp has already been advanced past the current packet by
-         * ogg_packet(), so rely on os->page_start to detect the page start. */
+         * ogg_packet(), so rely on os->page_start to detect the page start.
+         * The first packet only primes the decoder, so exclude its duration. */
         if (os->page_start)
-            priv->eos_page_duration = 0;
+            priv->eos_page_duration = bos ? -os->pduration : 0;
 
         if (os->segp != os->nsegs) {
             priv->eos_page_duration += os->pduration;
